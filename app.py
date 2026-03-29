@@ -9,47 +9,7 @@ import matplotlib.pyplot as plt
 import sqlite3
 import pandas as pd
 from datetime import datetime
-
-# ==========================================
-# 🔒 SECURITY SYSTEM
-# ==========================================
-# Change this to your secret password!
-APP_PASSWORD = "admin123"
-
-def check_password():
-    """Returns `True` if the user has entered the correct password."""
-    
-    # This nested function runs when the user hits 'Enter' on the password box
-    def password_entered():
-        if st.session_state["password"] == APP_PASSWORD:
-            st.session_state["password_correct"] = True
-            del st.session_state["password"]  # Delete password from memory for safety
-        else:
-            st.session_state["password_correct"] = False
-
-    # Check if they have already proven they know the password in this session
-    if "password_correct" not in st.session_state:
-        st.markdown("### 🔒 Restricted Access")
-        st.write("Please enter the password to access the Forensics Dashboard.")
-        st.text_input("Password", type="password", on_change=password_entered, key="password")
-        return False
-    
-    # Check if they guessed wrong
-    elif not st.session_state["password_correct"]:
-        st.markdown("### 🔒 Restricted Access")
-        st.text_input("Password", type="password", on_change=password_entered, key="password")
-        st.error("🚨 Incorrect password. Access denied.")
-        return False
-    
-    # If they passed both checks, let them in!
-    return True
-
-# Set up the web page
-st.set_page_config(page_title="Deepfake Audio Detector", page_icon="🎙️", layout="wide")
-
-# --- THE GATEKEEPER ---
-if not check_password():
-    st.stop()  # Do not run a single line of code below this if the password is wrong!
+from fpdf import FPDF
 
 # ==========================================
 # 🗄️ DATABASE SETUP
@@ -84,16 +44,57 @@ def fetch_history():
 init_db()
 
 # ==========================================
-# 🖥️ MAIN APP LOGIC (Only runs if unlocked)
+# 📄 PDF GENERATOR
 # ==========================================
-col1, col2 = st.columns([0.85, 0.15])
-with col1:
-    st.title("🎙️ Deepfake Voice & Audio Detector")
-with col2:
-    # Add a quick Log Out button to the top right
-    if st.button("Logout 🚪"):
-        st.session_state["password_correct"] = False
-        st.rerun()
+def create_pdf_report(filename, verdict, confidence, wave_path, spec_path):
+    pdf = FPDF()
+    pdf.add_page()
+    
+    # Header
+    pdf.set_font("Helvetica", style="B", size=20)
+    pdf.cell(200, 15, txt="🎙️ Audio Forensics Analysis Report", ln=True, align='C')
+    pdf.ln(10)
+    
+    # Metadata
+    pdf.set_font("Helvetica", size=12)
+    pdf.cell(200, 10, txt=f"Target File: {filename}", ln=True)
+    pdf.cell(200, 10, txt=f"Date of Analysis: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}", ln=True)
+    pdf.ln(10)
+    
+    # Verdict Section
+    pdf.set_font("Helvetica", style="B", size=16)
+    if verdict == "FAKE":
+        pdf.set_text_color(220, 53, 69) # Red
+        pdf.cell(200, 10, txt=f"VERDICT: SYNTHETIC AUDIO DETECTED", ln=True)
+    else:
+        pdf.set_text_color(40, 167, 69) # Green
+        pdf.cell(200, 10, txt=f"VERDICT: AUTHENTIC HUMAN VOICE", ln=True)
+        
+    pdf.set_text_color(0, 0, 0) # Back to black
+    pdf.set_font("Helvetica", size=12)
+    pdf.cell(200, 10, txt=f"Neural Network Confidence: {confidence:.2f}%", ln=True)
+    pdf.ln(10)
+    
+    # Visual Evidence
+    pdf.set_font("Helvetica", style="B", size=14)
+    pdf.cell(200, 10, txt="Visual Spectral Evidence:", ln=True)
+    
+    # Insert images
+    if os.path.exists(wave_path):
+        pdf.image(wave_path, x=10, y=None, w=190)
+    if os.path.exists(spec_path):
+        pdf.image(spec_path, x=10, y=None, w=190)
+        
+    # Save the PDF
+    report_path = "forensic_report.pdf"
+    pdf.output(report_path)
+    return report_path
+
+# ==========================================
+# 🖥️ MAIN APP LOGIC
+# ==========================================
+st.set_page_config(page_title="Deepfake Audio Detector", page_icon="🎙️", layout="wide")
+st.title("🎙️ Deepfake Voice & Audio Detector")
 
 tab1, tab2 = st.tabs(["🔍 Live Scanner", "📊 History Dashboard"])
 
@@ -126,12 +127,15 @@ with tab1:
                     c1, c2 = st.columns(2)
                     y, sr = librosa.load(temp_file, sr=16000)
                     
+                    # Generate and save Waveform image
                     with c1:
                         st.write("**Waveform**")
                         fig_wave, ax_wave = plt.subplots(figsize=(8, 3))
                         librosa.display.waveshow(y, sr=sr, ax=ax_wave, color="#1f77b4")
                         st.pyplot(fig_wave)
+                        fig_wave.savefig("temp_wave.png", bbox_inches='tight') # Save for PDF
                     
+                    # Generate and save Spectrogram image
                     with c2:
                         st.write("**Mel Spectrogram**")
                         fig_spec, ax_spec = plt.subplots(figsize=(8, 3))
@@ -139,7 +143,9 @@ with tab1:
                         S_dB = librosa.power_to_db(S, ref=np.max)
                         img = librosa.display.specshow(S_dB, x_axis='time', y_axis='mel', sr=sr, ax=ax_spec)
                         st.pyplot(fig_spec)
+                        fig_spec.savefig("temp_spec.png", bbox_inches='tight') # Save for PDF
 
+                    # Prediction
                     features = extract_features(temp_file)
                     if features is not None:
                         features = np.expand_dims(features, axis=0) 
@@ -157,12 +163,29 @@ with tab1:
                             confidence = (1 - prediction) * 100
                             st.success(f"✅ **REAL HUMAN VOICE** (Confidence: {confidence:.2f}%)")
                         
+                        # Save to Database
                         save_record(uploaded_file.name, confidence, verdict)
+                        
+                        # Generate PDF and create Download Button
+                        report_file = create_pdf_report(uploaded_file.name, verdict, confidence, "temp_wave.png", "temp_spec.png")
+                        
+                        with open(report_file, "rb") as pdf_file:
+                            pdf_bytes = pdf_file.read()
+                            
+                        st.download_button(
+                            label="📄 Download Official Forensic Report (PDF)",
+                            data=pdf_bytes,
+                            file_name=f"Report_{uploaded_file.name}.pdf",
+                            mime="application/pdf"
+                        )
+                        
                     else:
                         st.error("Could not process the audio file features.")
                         
-                    if os.path.exists(temp_file):
-                        os.remove(temp_file)
+                    # Clean up temporary files
+                    for file in [temp_file, "temp_wave.png", "temp_spec.png", "forensic_report.pdf"]:
+                        if os.path.exists(file):
+                            os.remove(file)
 
 # --- TAB 2: HISTORY DASHBOARD ---
 with tab2:
