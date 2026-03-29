@@ -263,7 +263,7 @@ with tab2:
         cm3.metric("Authentic Voices", real_count)
         
         st.markdown("---")
-        st.dataframe(df, use_container_width=True, hide_index=True)
+        st.dataframe(df, width='stretch', hide_index=True)
         st.markdown("### 📈 Detection Ratio")
         st.bar_chart(df['verdict'].value_counts(), color="#ff4b4b")
     else:
