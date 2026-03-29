@@ -37,10 +37,13 @@ If you want to run this application on your own machine, follow these steps:
    git clone [https://github.com/your-username/deepfake-audio-detector.git](https://github.com/your-username/deepfake-audio-detector.git)
    cd deepfake-audio-detector
 
-2. Install the required dependencies:
+2. **Install the required dependencies:**
+   ```bash
    pip install -r requirements.txt
 
-3. Run the Streamlit server:
+3. **Run the Streamlit server:**
+   ```bash
    python -m streamlit run app.py
 
-4. Open your browser: The app will automatically launch at http://localhost:8501
+4. **Open your browser:**
+   The app will automatically launch at http://localhost:8501
