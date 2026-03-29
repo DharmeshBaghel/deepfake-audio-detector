@@ -4,3 +4,4 @@ tensorflow
 librosa
 matplotlib
 scikit-learn
+pandas
