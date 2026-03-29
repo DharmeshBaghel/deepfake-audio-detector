@@ -110,7 +110,7 @@ def create_pdf_report(filename, verdict, confidence, wave_path, spec_path, cam_p
     if cam_path and os.path.exists(cam_path):
         pdf.add_page()
         pdf.set_font("Helvetica", style="B", size=14)
-        pdf.cell(200, 10, txt="Explainable AI (Grad-CAM Attention Map):", ln=True)
+        pdf.cell(200, 10, txt="Explainable AI (Saliency Mapping):", ln=True)
         pdf.image(cam_path, x=10, y=None, w=190)
         
     report_path = "forensic_report.pdf"
@@ -177,7 +177,7 @@ with tab1:
                         st.markdown("---")
                         
                         # --- EXPLAINABLE AI SECTION ---
-                        st.markdown("### 🔦 Explainable AI (X-Ray Vision)")
+                        st.markdown("### 🔦 Explainable AI (Saliency Mapping)")
                         cam_path = None
                         
                         try:
