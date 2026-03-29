@@ -13,41 +13,30 @@ from datetime import datetime
 from fpdf import FPDF
 
 # ==========================================
-# 🧠 EXPLAINABLE AI (Grad-CAM)
+# 🧠 EXPLAINABLE AI (Saliency Map for LSTMs)
 # ==========================================
-def get_last_conv_layer_name(model):
-    """Dynamically finds the last convolutional layer in the architecture."""
-    for layer in reversed(model.layers):
-        if 'conv' in layer.name.lower():
-            return layer.name
-    return None
-
-def make_gradcam_heatmap(img_array, model, last_conv_layer_name, pred_index=None):
-    """Calculates the gradient of the top predicted class to find what the AI focused on."""
-    grad_model = tf.keras.models.Model(
-        [model.inputs], [model.get_layer(last_conv_layer_name).output, model.output]
-    )
-
-    with tf.GradientTape() as tape:
-        last_conv_layer_output, preds = grad_model(img_array)
-        if pred_index is None:
-            pred_index = tf.argmax(preds[0])
-        class_channel = preds[:, pred_index]
-
-    # Calculate gradients
-    grads = tape.gradient(class_channel, last_conv_layer_output)
+def make_saliency_heatmap(input_features, model):
+    """Calculates how much each timeframe impacted the final prediction."""
+    input_tensor = tf.convert_to_tensor(input_features, dtype=tf.float32)
     
-    # Pool gradients over the temporal dimension
-    pooled_grads = tf.reduce_mean(grads, axis=(0, 1))
+    with tf.GradientTape() as tape:
+        tape.watch(input_tensor)
+        preds = model(input_tensor)
+        score = preds[0][0]
 
-    # Multiply feature map by importance and sum to get the heatmap
-    last_conv_layer_output = last_conv_layer_output[0]
-    heatmap = last_conv_layer_output @ pooled_grads[..., tf.newaxis]
-    heatmap = tf.squeeze(heatmap)
-
-    # Normalize between 0 and 1
-    heatmap = tf.maximum(heatmap, 0) / tf.math.reduce_max(heatmap)
-    return heatmap.numpy()
+    # Calculate gradients of the score with respect to the input
+    grads = tape.gradient(score, input_tensor)
+    
+    # Take absolute gradients, then average across the frequency features to get a 1D time array
+    saliency = tf.reduce_mean(tf.abs(grads), axis=-1)
+    saliency = tf.squeeze(saliency)
+    
+    # Normalize between 0 and 1 so it fits perfectly on a graph
+    max_val = tf.math.reduce_max(saliency)
+    if max_val > 0:
+        saliency = saliency / max_val
+        
+    return saliency.numpy()
 
 # ==========================================
 # 🗄️ DATABASE SETUP
@@ -190,30 +179,26 @@ with tab1:
                         # --- EXPLAINABLE AI SECTION ---
                         st.markdown("### 🔦 Explainable AI (X-Ray Vision)")
                         cam_path = None
-                        last_conv_layer = get_last_conv_layer_name(model)
                         
-                        if last_conv_layer:
-                            try:
-                                heatmap = make_gradcam_heatmap(features, model, last_conv_layer)
-                                
-                                # Plot the AI's attention over time
-                                time_axis = np.linspace(0, librosa.get_duration(y=y, sr=sr), len(heatmap))
-                                fig_cam, ax_cam = plt.subplots(figsize=(10, 2.5))
-                                ax_cam.plot(time_axis, heatmap, color='r', linewidth=2)
-                                ax_cam.fill_between(time_axis, heatmap, color='r', alpha=0.3)
-                                ax_cam.set_xlim([0, time_axis[-1]])
-                                ax_cam.set_xlabel("Time (seconds)")
-                                ax_cam.set_ylabel("AI Attention Score")
-                                
-                                st.write("This graph tracks the neural network's internal focus. **Red spikes** indicate the exact timestamps where the AI detected the highest density of synthetic acoustic anomalies.")
-                                st.pyplot(fig_cam)
-                                fig_cam.savefig("temp_cam.png", bbox_inches='tight')
-                                cam_path = "temp_cam.png"
-                                
-                            except Exception as e:
-                                st.warning(f"Could not generate XAI Heatmap: {e}")
-                        else:
-                            st.info("Grad-CAM requires a Convolutional layer. No Conv layer detected in model architecture.")
+                        try:
+                            heatmap = make_saliency_heatmap(features, model)
+                            
+                            # Plot the AI's attention over time
+                            time_axis = np.linspace(0, librosa.get_duration(y=y, sr=sr), len(heatmap))
+                            fig_cam, ax_cam = plt.subplots(figsize=(10, 2.5))
+                            ax_cam.plot(time_axis, heatmap, color='r', linewidth=2)
+                            ax_cam.fill_between(time_axis, heatmap, color='r', alpha=0.3)
+                            ax_cam.set_xlim([0, time_axis[-1]])
+                            ax_cam.set_xlabel("Time (seconds)")
+                            ax_cam.set_ylabel("AI Attention Score")
+                            
+                            st.write("This graph tracks the LSTM's internal focus using **Saliency Mapping**. **Red spikes** indicate the exact timestamps where the AI detected the highest density of synthetic acoustic anomalies.")
+                            st.pyplot(fig_cam)
+                            fig_cam.savefig("temp_cam.png", bbox_inches='tight')
+                            cam_path = "temp_cam.png"
+                            
+                        except Exception as e:
+                            st.warning(f"Could not generate XAI Heatmap: {e}")
                         
                         st.markdown("---")
                         st.markdown("### 🤖 Neural Network Verdict")
