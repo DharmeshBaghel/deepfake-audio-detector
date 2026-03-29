@@ -50,9 +50,9 @@ def create_pdf_report(filename, verdict, confidence, wave_path, spec_path):
     pdf = FPDF()
     pdf.add_page()
     
-    # Header
+    # Header (Removed the emoji so Helvetica doesn't crash!)
     pdf.set_font("Helvetica", style="B", size=20)
-    pdf.cell(200, 15, txt="🎙️ Audio Forensics Analysis Report", ln=True, align='C')
+    pdf.cell(200, 15, txt="Audio Forensics Analysis Report", ln=True, align='C')
     pdf.ln(10)
     
     # Metadata
