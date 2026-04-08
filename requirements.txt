@@ -7,4 +7,4 @@ scikit-learn
 pandas
 fpdf2
 tinytag
-psycopg2-binary
+psycopg2
