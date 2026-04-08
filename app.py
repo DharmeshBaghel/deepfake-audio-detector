@@ -11,6 +11,7 @@ import sqlite3
 import pandas as pd
 from datetime import datetime
 from fpdf import FPDF
+from tinytag import TinyTag
 
 # ==========================================
 # 🧠 EXPLAINABLE AI (Saliency Map for LSTMs)
@@ -24,14 +25,10 @@ def make_saliency_heatmap(input_features, model):
         preds = model(input_tensor)
         score = preds[0][0]
 
-    # Calculate gradients of the score with respect to the input
     grads = tape.gradient(score, input_tensor)
-    
-    # Take absolute gradients, then average across the frequency features to get a 1D time array
     saliency = tf.reduce_mean(tf.abs(grads), axis=-1)
     saliency = tf.squeeze(saliency)
     
-    # Normalize between 0 and 1 so it fits perfectly on a graph
     max_val = tf.math.reduce_max(saliency)
     if max_val > 0:
         saliency = saliency / max_val
@@ -110,7 +107,7 @@ def create_pdf_report(filename, verdict, confidence, wave_path, spec_path, cam_p
     if cam_path and os.path.exists(cam_path):
         pdf.add_page()
         pdf.set_font("Helvetica", style="B", size=14)
-        pdf.cell(200, 10, txt="Explainable AI (Saliency Mapping):", ln=True)
+        pdf.cell(200, 10, txt="Explainable AI (Saliency Map):", ln=True)
         pdf.image(cam_path, x=10, y=None, w=190)
         
     report_path = "forensic_report.pdf"
@@ -149,9 +146,62 @@ with tab1:
                     with open(temp_file, "wb") as f:
                         f.write(uploaded_file.getbuffer())
                     
+                    # ==========================================
+                    # 🕵️ ADVANCED FORENSICS SUITE
+                    # ==========================================
+                    st.markdown("### 🕵️ Digital Forensics Report")
+                    
+                    # 1. Hidden Metadata Extraction
+                    try:
+                        tag = TinyTag.get(temp_file)
+                        st.write("**File Metadata (Digital Fingerprint):**")
+                        
+                        meta_c1, meta_c2, meta_c3, meta_c4 = st.columns(4)
+                        meta_c1.metric("Sample Rate", f"{tag.samplerate} Hz")
+                        meta_c2.metric("Bitrate", f"{tag.bitrate} kbps" if tag.bitrate else "Unknown")
+                        meta_c3.metric("Duration", f"{tag.duration:.2f} sec")
+                        meta_c4.metric("File Size", f"{tag.filesize / 1024:.1f} KB")
+                        
+                        if tag.extra:
+                            st.caption(f"Hidden Tags Detected: {tag.extra}")
+                    except Exception as e:
+                        st.warning("Could not extract hidden metadata from this file.")
+
+                    # 2. Acoustic Anomaly Breakdown (Sub-metrics)
+                    st.write("**Acoustic Feature Analysis:**")
+                    y, sr = librosa.load(temp_file, sr=16000)
+                    
+                    zcr = librosa.feature.zero_crossing_rate(y)
+                    zcr_mean = np.mean(zcr)
+                    
+                    flatness = librosa.feature.spectral_flatness(y=y)
+                    flat_mean = np.mean(flatness)
+                    
+                    feat_c1, feat_c2 = st.columns(2)
+                    
+                    with feat_c1:
+                        st.write("⏱️ **Vocal Roughness (Zero-Crossing)**")
+                        st.progress(min(int(zcr_mean * 1000), 100))
+                        if zcr_mean < 0.05:
+                            st.caption("🚨 Suspiciously smooth. Human vocal cords usually produce more friction/noise.")
+                        else:
+                            st.caption("✅ Natural friction detected.")
+                            
+                    with feat_c2:
+                        st.write("🌬️ **Breathiness (Spectral Flatness)**")
+                        st.progress(min(int(flat_mean * 10000), 100))
+                        if flat_mean < 0.001:
+                            st.caption("🚨 Suspiciously pure tone. Lacks natural human breath resonance.")
+                        else:
+                            st.caption("✅ Natural ambient resonance detected.")
+                            
+                    st.markdown("---")
+
+                    # ==========================================
+                    # 📊 VISUAL SPECTROGRAMS
+                    # ==========================================
                     st.markdown("### 📊 Audio Forensics Analysis")
                     c1, c2 = st.columns(2)
-                    y, sr = librosa.load(temp_file, sr=16000)
                     
                     with c1:
                         st.write("**Waveform**")
@@ -176,14 +226,15 @@ with tab1:
                         
                         st.markdown("---")
                         
-                        # --- EXPLAINABLE AI SECTION ---
-                        st.markdown("### 🔦 Explainable AI (Saliency Mapping)")
+                        # ==========================================
+                        # 🔦 EXPLAINABLE AI SECTION
+                        # ==========================================
+                        st.markdown("### 🔦 Explainable AI (X-Ray Vision)")
                         cam_path = None
                         
                         try:
                             heatmap = make_saliency_heatmap(features, model)
                             
-                            # Plot the AI's attention over time
                             time_axis = np.linspace(0, librosa.get_duration(y=y, sr=sr), len(heatmap))
                             fig_cam, ax_cam = plt.subplots(figsize=(10, 2.5))
                             ax_cam.plot(time_axis, heatmap, color='r', linewidth=2)
