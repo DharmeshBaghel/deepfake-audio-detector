@@ -440,6 +440,6 @@ with tab2:
                 )
             else:
                 st.warning("No scans match your search criteria. Try a different filename!")
-            )  
+                
         else:
             st.info("The database is currently empty. Run a scan to see history and analytics!")
