@@ -348,17 +348,53 @@ with tab2:
         df = fetch_history()
         
         if not df.empty:
-            # Analytics Section
+            # ==========================================
+            # 📊 LIVE SYSTEM ANALYTICS
+            # ==========================================
             st.subheader("Live System Analytics")
+            
+            # 1. Calculate the math
             total_scans = len(df)
             fake_count = len(df[df['verdict'] == 'FAKE'])
             real_count = len(df[df['verdict'] == 'REAL'])
+            avg_confidence = df['confidence'].mean()
             
+            # Find scans from today
+            today_date = datetime.now().strftime("%Y-%m-%d")
+            scans_today = len(df[df['timestamp'].str.contains(today_date)])
+            
+            # 2. Top Row Metrics (The Big Numbers)
             col1, col2, col3 = st.columns(3)
-            col1.metric("Total System Scans", total_scans)
-            col2.metric("Deepfakes Caught", fake_count)
-            col3.metric("Authentic Audio", real_count)
+            col1.metric("Total Scans", total_scans)
+            col2.metric("Fakes Caught", fake_count)
+            col3.metric("Real Audio", real_count)
             
+            # 3. Bottom Row Metrics (Extra Details)
+            col4, col5, col6 = st.columns(3)
+            col4.metric("Avg AI Certainty", f"{avg_confidence:.1f}%")
+            col5.metric("Scans Today", scans_today)
+            col6.metric("Database Status", "Online 🟢")
+            
+            st.markdown("---")
+            
+            # ==========================================
+            # 📈 VISUAL DATA CHARTS
+            # ==========================================
+            st.subheader("Data Charts")
+            
+            chart_col1, chart_col2 = st.columns(2)
+            
+            with chart_col1:
+                st.markdown("**Real vs Fake Total**")
+                chart_data = df['verdict'].value_counts()
+                st.bar_chart(chart_data, color="#ff4b4b") 
+                
+            with chart_col2:
+                st.markdown("**AI Certainty Trend**")
+                # Create a line chart using timestamp as the X-axis and confidence as the Y-axis
+                trend_data = df.set_index('timestamp')['confidence']
+                st.line_chart(trend_data, color="#0068c9")
+                
             st.markdown("---")
             
             # The Merged History Section
