@@ -294,7 +294,7 @@ with tab1:
                                 st.info(summary_response.text)
                                 
                             except Exception as e:
-                                st.warning("Could not load AI summary at this time.")
+                                st.warning(f"Could not load AI summary at this time. Error: {e}")
                         
                         save_record(uploaded_file.name, confidence, verdict)
                         
