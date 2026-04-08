@@ -7,7 +7,7 @@ import os
 import librosa
 import librosa.display
 import matplotlib.pyplot as plt
-import sqlite3
+import psycopg2
 import pandas as pd
 from datetime import datetime
 from fpdf import FPDF
@@ -36,31 +36,39 @@ def make_saliency_heatmap(input_features, model):
     return saliency.numpy()
 
 # ==========================================
-# 🗄️ DATABASE SETUP
+# 🗄️ CLOUD DATABASE SETUP (Supabase/PostgreSQL)
 # ==========================================
+# Securely fetch the URL from Streamlit's hidden vault
+DB_URL = st.secrets["DATABASE_URL"]
+
 def init_db():
-    conn = sqlite3.connect('forensics_history.db')
+    conn = psycopg2.connect(DB_URL)
     c = conn.cursor()
+    # PostgreSQL uses SERIAL instead of AUTOINCREMENT
     c.execute('''CREATE TABLE IF NOT EXISTS history
-                 (id INTEGER PRIMARY KEY AUTOINCREMENT,
+                 (id SERIAL PRIMARY KEY,
                   filename TEXT,
                   confidence REAL,
                   verdict TEXT,
                   timestamp TEXT)''')
     conn.commit()
+    c.close()
     conn.close()
 
 def save_record(filename, confidence, verdict):
-    conn = sqlite3.connect('forensics_history.db')
+    conn = psycopg2.connect(DB_URL)
     c = conn.cursor()
     timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    c.execute("INSERT INTO history (filename, confidence, verdict, timestamp) VALUES (?, ?, ?, ?)",
+    # PostgreSQL uses %s for placeholders instead of ?
+    c.execute("INSERT INTO history (filename, confidence, verdict, timestamp) VALUES (%s, %s, %s, %s)",
               (filename, float(confidence), verdict, timestamp))
     conn.commit()
+    c.close()
     conn.close()
 
 def fetch_history():
-    conn = sqlite3.connect('forensics_history.db')
+    conn = psycopg2.connect(DB_URL)
+    # Pandas can read standard SQL queries natively
     df = pd.read_sql_query("SELECT * FROM history ORDER BY timestamp DESC", conn)
     conn.close()
     return df
