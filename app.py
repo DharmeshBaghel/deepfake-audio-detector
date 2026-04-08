@@ -397,18 +397,49 @@ with tab2:
                 
             st.markdown("---")
             
-            # The Merged History Section
+            # ==========================================
+            # 🗂️ FULL SCAN HISTORY & SMART SEARCH
+            # ==========================================
             st.subheader("🗂️ Full Scan History")
-            st.dataframe(df, use_container_width=True)
             
-            # CSV Download
-            csv_data = df.to_csv(index=False).encode('utf-8')
-            st.download_button(
-                label="📥 Download Full Database Log (CSV)",
-                data=csv_data,
-                file_name='deepfake_system_logs.csv',
-                mime='text/csv',
-                type="primary"
+            # 1. Build the Search UI
+            search_col1, search_col2 = st.columns([2, 1]) # Make the text box wider than the dropdown
+            
+            with search_col1:
+                # Text input for searching filenames
+                text_query = st.text_input("🔍 Search by Filename", placeholder="e.g., suspect_audio.wav")
+                
+            with search_col2:
+                # Dropdown menu to filter by verdict
+                verdict_filter = st.selectbox("🚦 Filter by Verdict", ["All Scans", "FAKE", "REAL"])
+            
+            # 2. Filter the Data (The "Smart" part)
+            filtered_df = df.copy() # Make a safe copy of your cloud data
+            
+            # If they typed something, filter the filename column
+            if text_query:
+                # case=False means 'A' and 'a' are treated the same
+                filtered_df = filtered_df[filtered_df['filename'].str.contains(text_query, case=False, na=False)]
+                
+            # If they used the dropdown, filter the verdict column
+            if verdict_filter != "All Scans":
+                filtered_df = filtered_df[filtered_df['verdict'] == verdict_filter]
+            
+            # 3. Display the results
+            if not filtered_df.empty:
+                st.dataframe(filtered_df, use_container_width=True)
+                
+                # 4. Smart CSV Export (Only downloads what is on the screen!)
+                csv_data = filtered_df.to_csv(index=False).encode('utf-8')
+                st.download_button(
+                    label=f"📥 Download {len(filtered_df)} Filtered Logs (CSV)",
+                    data=csv_data,
+                    file_name='deepfake_filtered_logs.csv',
+                    mime='text/csv',
+                    type="primary"
+                )
+            else:
+                st.warning("No scans match your search criteria. Try a different filename!")
             )
         else:
             st.info("The database is currently empty. Run a scan to see history and analytics!")
