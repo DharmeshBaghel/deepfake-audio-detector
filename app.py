@@ -122,7 +122,7 @@ def create_pdf_report(filename, verdict, confidence, wave_path, spec_path, cam_p
 st.set_page_config(page_title="Deepfake Audio Detector", page_icon="🎙️", layout="wide")
 st.title("🎙️ Deepfake Voice & Audio Detector")
 
-tab1, tab2 = st.tabs(["🔍 Live Scanner", "📊 History Dashboard"])
+tab1, tab2, tab3 = st.tabs(["🔍 Scan Audio", "📊 History Dashboard", "⚙️ Admin Center"])
 
 @st.cache_resource
 def load_trained_model():
@@ -337,3 +337,61 @@ with tab2:
         st.bar_chart(df['verdict'].value_counts(), color="#ff4b4b")
     else:
         st.info("No records found. Run a scan in the Live Scanner to see history!")
+
+with tab3:
+    st.header("⚙️ System Administration")
+    st.markdown("Restricted access. Please log in to view system analytics.")
+    
+    # The lock on the door
+    admin_pass = st.text_input("Enter Admin Password", type="password")
+    
+    # If the password matches the secret vault...
+    if admin_pass == st.secrets["ADMIN_PASSWORD"]:
+        st.success("Authentication successful. Welcome, Admin.")
+        st.markdown("---")
+        
+        # Grab the live cloud data
+        df = fetch_history()
+        
+        if not df.empty:
+            # 1. TOP-LEVEL METRICS (The big numbers)
+            st.subheader("Live System Analytics")
+            total_scans = len(df)
+            fake_count = len(df[df['verdict'] == 'FAKE'])
+            real_count = len(df[df['verdict'] == 'REAL'])
+            
+            col1, col2, col3 = st.columns(3)
+            col1.metric("Total System Scans", total_scans)
+            col2.metric("Deepfakes Caught", fake_count)
+            col3.metric("Authentic Audio", real_count)
+            
+            st.markdown("---")
+            
+            # 2. VISUAL CHARTS (Great for reports)
+            st.subheader("Verdict Distribution")
+            chart_data = df['verdict'].value_counts()
+            st.bar_chart(chart_data, color="#ff4b4b") 
+            
+            st.markdown("---")
+            
+            # 3. RAW DATABASE & EXPORT
+            st.subheader("Raw Database Logs")
+            st.dataframe(df, use_container_width=True)
+            
+            # Convert the dataframe to a CSV format in memory
+            csv_data = df.to_csv(index=False).encode('utf-8')
+            
+            # Download button for the CSV
+            st.download_button(
+                label="📥 Download Full Database Log (CSV)",
+                data=csv_data,
+                file_name='deepfake_system_logs.csv',
+                mime='text/csv',
+                type="primary"
+            )
+        else:
+            st.info("The database is currently empty. Run a scan to see analytics!")
+            
+    # If they type the wrong password...
+    elif admin_pass != "":
+        st.error("Access Denied. Incorrect password.")
