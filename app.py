@@ -1,3 +1,4 @@
+import google.generativeai as genai
 from supabase import create_client, Client
 import streamlit as st
 import numpy as np
@@ -60,7 +61,13 @@ def fetch_history():
     # Convert directly to a pandas dataframe
     return pd.DataFrame(response.data)
 
-# Note: We no longer need init_db() because we built the table in the Supabase UI!
+# Note: We no longer need init_db() because we built the table in the Supabase UI
+
+#==========================================
+# 🤖 GEMINI AI SETUP
+# ==========================================
+genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
+gemini_model = genai.GenerativeModel('gemini-1.5-flash')
 
 # ==========================================
 # 📄 PDF GENERATOR
@@ -257,6 +264,37 @@ with tab1:
                             verdict = "REAL"
                             confidence = (1 - prediction) * 100
                             st.success(f"✅ **REAL HUMAN VOICE** (Confidence: {confidence:.2f}%)")
+
+                        # ==========================================
+                        # 📝 AI INVESTIGATOR SUMMARY (GEMINI)
+                        # ==========================================
+                        st.markdown("---")
+                        st.markdown("### 🕵️ AI Investigator Summary")
+                        
+                        with st.spinner("Writing simple summary..."):
+                            try:
+                                # Give instructions to Gemini
+                                prompt = f"""
+                                You are a digital forensics expert. 
+                                I just scanned an audio file. Here are the results:
+                                - Verdict: {verdict}
+                                - AI Score: {confidence:.2f}% FAKE
+                                - Voice Roughness (Zero-Crossing): {zcr_mean:.4f}
+                                - Breathiness (Flatness): {flat_mean:.6f}
+                                
+                                Write a simple 3-sentence summary for a non-technical person. 
+                                Explain what these numbers mean and why the audio is {verdict}. 
+                                Keep it professional.
+                                """
+                                
+                                # Get the answer
+                                summary_response = gemini_model.generate_content(prompt)
+                                
+                                # Show the answer in a nice blue box
+                                st.info(summary_response.text)
+                                
+                            except Exception as e:
+                                st.warning("Could not load AI summary at this time.")
                         
                         save_record(uploaded_file.name, confidence, verdict)
                         
