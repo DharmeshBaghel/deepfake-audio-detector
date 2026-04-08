@@ -122,7 +122,7 @@ def create_pdf_report(filename, verdict, confidence, wave_path, spec_path, cam_p
 st.set_page_config(page_title="Deepfake Audio Detector", page_icon="🎙️", layout="wide")
 st.title("🎙️ Deepfake Voice & Audio Detector")
 
-tab1, tab2, tab3 = st.tabs(["🔍 Scan Audio", "📊 History Dashboard", "⚙️ Admin Center"])
+tab1, tab2 = st.tabs(["🔍 Scan Audio", "⚙️ Admin & History"])
 
 @st.cache_resource
 def load_trained_model():
@@ -318,52 +318,25 @@ with tab1:
                             os.remove(file)
 
 with tab2:
-    st.header("🗄️ Investigation History")
-    df = fetch_history()
+    st.header("⚙️ Admin & History Center")
     
-    if not df.empty:
-        total_scans = len(df)
-        fake_count = len(df[df['verdict'] == 'FAKE'])
-        real_count = len(df[df['verdict'] == 'REAL'])
-        
-        cm1, cm2, cm3 = st.columns(3)
-        cm1.metric("Total Scans", total_scans)
-        cm2.metric("Deepfakes Caught", fake_count)
-        cm3.metric("Authentic Voices", real_count)
-        
-        st.markdown("---")
-        st.dataframe(df, width='stretch', hide_index=True)
-        st.markdown("### 📈 Detection Ratio")
-        st.bar_chart(df['verdict'].value_counts(), color="#ff4b4b")
-    else:
-        st.info("No records found. Run a scan in the Live Scanner to see history!")
-
-with tab3:
-    st.header("⚙️ System Administration")
-    
-    # 1. Setup App Memory (Session State)
-    if "admin_logged_in" not in st.session_state:
-        st.session_state.admin_logged_in = False
-
-    # 2. Show Login Screen if Locked
+    # 1. Show Login Screen if Locked
     if not st.session_state.admin_logged_in:
-        st.markdown("Restricted access. Please log in.")
+        st.markdown("🔒 Restricted access. Please log in to view analytics and scan history.")
         admin_pass = st.text_input("Enter Admin Password", type="password")
         
-        # The new Enter Button
         enter_btn = st.button("Enter 🔐", type="primary")
         
         if enter_btn:
             if admin_pass == st.secrets["ADMIN_PASSWORD"]:
                 st.session_state.admin_logged_in = True
-                st.rerun() # Instantly refresh to show the dashboard
+                st.rerun() 
             else:
                 st.error("Access Denied. Incorrect password.")
 
-    # 3. Show Dashboard if Unlocked
+    # 2. Show Unified Dashboard if Unlocked
     if st.session_state.admin_logged_in:
         
-        # Add a quick Logout button at the top
         if st.button("Logout 🚪"):
             st.session_state.admin_logged_in = False
             st.rerun()
@@ -375,6 +348,7 @@ with tab3:
         df = fetch_history()
         
         if not df.empty:
+            # Analytics Section
             st.subheader("Live System Analytics")
             total_scans = len(df)
             fake_count = len(df[df['verdict'] == 'FAKE'])
@@ -387,17 +361,12 @@ with tab3:
             
             st.markdown("---")
             
-            st.subheader("Verdict Distribution")
-            chart_data = df['verdict'].value_counts()
-            st.bar_chart(chart_data, color="#ff4b4b") 
-            
-            st.markdown("---")
-            
-            st.subheader("Raw Database Logs")
+            # The Merged History Section
+            st.subheader("🗂️ Full Scan History")
             st.dataframe(df, use_container_width=True)
             
+            # CSV Download
             csv_data = df.to_csv(index=False).encode('utf-8')
-            
             st.download_button(
                 label="📥 Download Full Database Log (CSV)",
                 data=csv_data,
@@ -406,4 +375,4 @@ with tab3:
                 type="primary"
             )
         else:
-            st.info("The database is currently empty. Run a scan to see analytics!")
+            st.info("The database is currently empty. Run a scan to see history and analytics!")
