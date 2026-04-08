@@ -437,8 +437,9 @@ with tab2:
                     file_name='deepfake_filtered_logs.csv',
                     mime='text/csv',
                     type="primary"
+                )
             else:
                 st.warning("No scans match your search criteria. Try a different filename!")
-            )
+                
         else:
             st.info("The database is currently empty. Run a scan to see history and analytics!")
