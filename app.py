@@ -67,7 +67,7 @@ def fetch_history():
 # 🤖 GEMINI AI SETUP
 # ==========================================
 genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
-gemini_model = genai.GenerativeModel('gemini-1.5-flash')
+gemini_model = genai.GenerativeModel('gemini-2.5-flash')
 
 # ==========================================
 # 📄 PDF GENERATOR
