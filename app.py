@@ -1,3 +1,4 @@
+from supabase import create_client, Client
 import streamlit as st
 import numpy as np
 import tensorflow as tf
@@ -7,7 +8,6 @@ import os
 import librosa
 import librosa.display
 import matplotlib.pyplot as plt
-import psycopg2
 import pandas as pd
 from datetime import datetime
 from fpdf import FPDF
@@ -36,44 +36,31 @@ def make_saliency_heatmap(input_features, model):
     return saliency.numpy()
 
 # ==========================================
-# 🗄️ CLOUD DATABASE SETUP (Supabase/PostgreSQL)
+# 🗄️ CLOUD DATABASE SETUP (Supabase API)
 # ==========================================
-# Securely fetch the URL from Streamlit's hidden vault
-DB_URL = st.secrets["DATABASE_URL"]
-
-def init_db():
-    conn = psycopg2.connect(DB_URL)
-    c = conn.cursor()
-    # PostgreSQL uses SERIAL instead of AUTOINCREMENT
-    c.execute('''CREATE TABLE IF NOT EXISTS history
-                 (id SERIAL PRIMARY KEY,
-                  filename TEXT,
-                  confidence REAL,
-                  verdict TEXT,
-                  timestamp TEXT)''')
-    conn.commit()
-    c.close()
-    conn.close()
+# Securely fetch the API keys from Streamlit's vault
+url: str = st.secrets["SUPABASE_URL"]
+key: str = st.secrets["SUPABASE_KEY"]
+supabase: Client = create_client(url, key)
 
 def save_record(filename, confidence, verdict):
-    conn = psycopg2.connect(DB_URL)
-    c = conn.cursor()
     timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    # PostgreSQL uses %s for placeholders instead of ?
-    c.execute("INSERT INTO history (filename, confidence, verdict, timestamp) VALUES (%s, %s, %s, %s)",
-              (filename, float(confidence), verdict, timestamp))
-    conn.commit()
-    c.close()
-    conn.close()
+    data = {
+        "filename": filename,
+        "confidence": float(confidence),
+        "verdict": verdict,
+        "timestamp": timestamp
+    }
+    # Insert data via secure API instead of SQL
+    supabase.table('history').insert(data).execute()
 
 def fetch_history():
-    conn = psycopg2.connect(DB_URL)
-    # Pandas can read standard SQL queries natively
-    df = pd.read_sql_query("SELECT * FROM history ORDER BY timestamp DESC", conn)
-    conn.close()
-    return df
+    # Fetch data via secure API
+    response = supabase.table('history').select('*').order('timestamp', desc=True).execute()
+    # Convert directly to a pandas dataframe
+    return pd.DataFrame(response.data)
 
-init_db()
+# Note: We no longer need init_db() because we built the table in the Supabase UI!
 
 # ==========================================
 # 📄 PDF GENERATOR
