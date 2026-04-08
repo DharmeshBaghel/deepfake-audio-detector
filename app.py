@@ -340,13 +340,34 @@ with tab2:
 
 with tab3:
     st.header("⚙️ System Administration")
-    st.markdown("Restricted access. Please log in to view system analytics.")
     
-    # The lock on the door
-    admin_pass = st.text_input("Enter Admin Password", type="password")
-    
-    # If the password matches the secret vault...
-    if admin_pass == st.secrets["ADMIN_PASSWORD"]:
+    # 1. Setup App Memory (Session State)
+    if "admin_logged_in" not in st.session_state:
+        st.session_state.admin_logged_in = False
+
+    # 2. Show Login Screen if Locked
+    if not st.session_state.admin_logged_in:
+        st.markdown("Restricted access. Please log in.")
+        admin_pass = st.text_input("Enter Admin Password", type="password")
+        
+        # The new Enter Button
+        enter_btn = st.button("Enter 🔐", type="primary")
+        
+        if enter_btn:
+            if admin_pass == st.secrets["ADMIN_PASSWORD"]:
+                st.session_state.admin_logged_in = True
+                st.rerun() # Instantly refresh to show the dashboard
+            else:
+                st.error("Access Denied. Incorrect password.")
+
+    # 3. Show Dashboard if Unlocked
+    if st.session_state.admin_logged_in:
+        
+        # Add a quick Logout button at the top
+        if st.button("Logout 🚪"):
+            st.session_state.admin_logged_in = False
+            st.rerun()
+            
         st.success("Authentication successful. Welcome, Admin.")
         st.markdown("---")
         
@@ -354,7 +375,6 @@ with tab3:
         df = fetch_history()
         
         if not df.empty:
-            # 1. TOP-LEVEL METRICS (The big numbers)
             st.subheader("Live System Analytics")
             total_scans = len(df)
             fake_count = len(df[df['verdict'] == 'FAKE'])
@@ -367,21 +387,17 @@ with tab3:
             
             st.markdown("---")
             
-            # 2. VISUAL CHARTS (Great for reports)
             st.subheader("Verdict Distribution")
             chart_data = df['verdict'].value_counts()
             st.bar_chart(chart_data, color="#ff4b4b") 
             
             st.markdown("---")
             
-            # 3. RAW DATABASE & EXPORT
             st.subheader("Raw Database Logs")
             st.dataframe(df, use_container_width=True)
             
-            # Convert the dataframe to a CSV format in memory
             csv_data = df.to_csv(index=False).encode('utf-8')
             
-            # Download button for the CSV
             st.download_button(
                 label="📥 Download Full Database Log (CSV)",
                 data=csv_data,
@@ -391,7 +407,3 @@ with tab3:
             )
         else:
             st.info("The database is currently empty. Run a scan to see analytics!")
-            
-    # If they type the wrong password...
-    elif admin_pass != "":
-        st.error("Access Denied. Incorrect password.")
