@@ -1,49 +1,56 @@
-# 🎙️ Deepfake Audio & Voice Forensics Dashboard
+# 🕵️‍♂️ Deepfake Audio Detection & Forensics Suite
 
-[![Python](https://img.shields.io/badge/Python-3.11-blue.svg)](https://www.python.org/)
-[![TensorFlow](https://img.shields.io/badge/TensorFlow-2.15-orange.svg)](https://www.tensorflow.org/)
-[![Streamlit](https://img.shields.io/badge/Streamlit-Live-red.svg)](https://streamlit.io/)
+![Python](https://img.shields.io/badge/Python-3.9+-blue.svg)
+![Streamlit](https://img.shields.io/badge/UI-Streamlit-FF4B4B.svg)
+![Supabase](https://img.shields.io/badge/Database-Supabase-3ECF8E.svg)
+![Gemini](https://img.shields.io/badge/AI-Google_Gemini-8E75B2.svg)
 
-## 🔍 Project Overview
-This project is a full-stack machine learning web application designed to detect synthetic and AI-generated audio (deepfakes). Using a Long Short-Term Memory (LSTM) neural network, the application analyzes the spectral artifacts and frequency patterns of an uploaded `.wav` file to determine if the voice is an authentic human or an AI clone.
+## 📌 Project Overview
+A full-stack, enterprise-grade forensic application designed to detect synthetic and AI-generated speech. Built with a custom Deep Learning (LSTM) core, this system extracts acoustic anomalies—such as unnatural zero-crossing rates and spectral flatness—and provides human-readable intelligence reports for non-technical investigators.
 
-**Live Demo:** [Click here to test the live application!](https://deepfake-audio-detector-n8n6tnxwsbwmt2vdzh3bda.streamlit.app/)
+## 🚀 Enterprise Architecture & Features
 
----
+### 1. Neural Network Core (Audio Forensics)
+* **Librosa Feature Extraction:** Isolates micro-frictions and ambient resonance patterns that synthetic voice engines (like ElevenLabs or VITS) fail to replicate.
+* **LSTM Inference Engine:** Evaluates multidimensional audio arrays to generate a high-precision confidence score on human authenticity.
+* **Explainable AI (XAI):** Generates saliency heatmaps to visually isolate the exact timestamps where the AI detected synthetic artifacts.
 
-## ✨ Core Features
-* **🧠 Neural Network Analysis:** Utilizes a custom-trained LSTM model to predict the authenticity of audio based on extracted Mel-frequency cepstral coefficients (MFCCs).
-* **📊 Visual Forensics:** Automatically generates and displays high-resolution Waveforms and Mel-Spectrograms so users can physically see the acoustic differences.
-* **🗄️ Investigation History:** Features a built-in SQLite database that acts as a secure, persistent ledger of all previously scanned audio files and their verdicts.
-* **📄 PDF Reporting:** Includes a custom report generator (`fpdf2`) that allows users to download an official forensic PDF detailing the AI's confidence metrics and visual evidence.
+### 2. Full-Stack Data & Security Pipeline
+* **Cloud Database Integration:** Synchronizes all forensic scans to a live **Supabase (PostgreSQL)** backend for permanent record keeping.
+* **Role-Based Access Control (RBAC):** Secured, password-protected administrative command center.
+* **Live System Analytics:** Real-time data visualization of system traffic, confidence trends, and verdict distributions using Pandas and Streamlit charting.
+* **Smart Search:** Dynamic dataframe filtering for instant forensic record retrieval.
 
----
+### 3. Generative AI & MLOps 
+* **Plain-English Summaries:** Integrates the **Google Gemini API** to translate complex spectral math into professional, 3-sentence investigation summaries with built-in rate-limit fail-safes.
+* **Automated PDF Reporting:** Dynamically compiles the acoustic math, AI summaries, and visual waveform data into court-ready, downloadable PDF reports.
+* **MLOps Feedback Loop:** Features a "Human-in-the-Loop" architecture allowing admins to flag False Positives/Negatives directly in the UI, tagging the data for future model retraining.
 
-## 🛠️ Technology Stack
-* **Machine Learning Engine:** TensorFlow / Keras (LSTM Neural Network)
-* **Audio Processing:** Librosa (Feature extraction, MFCCs, Spectrograms)
-* **Frontend Framework:** Streamlit (Cloud-hosted UI)
-* **Data Visualization:** Matplotlib & Pandas
-* **Database & Export:** SQLite3, FPDF2
+## 💻 Tech Stack
+* **Frontend:** Streamlit
+* **Backend:** Python
+* **Machine Learning:** TensorFlow/Keras, Librosa, NumPy, Matplotlib
+* **Database:** Supabase
+* **External APIs:** Google Gemini API
+* **Document Generation:** FPDF
 
----
-
-## 🚀 How to Run Locally
-
-If you want to run this application on your own machine, follow these steps:
-
-1. **Clone the repository:**
+## ⚙️ Local Installation
+1. Clone the repository:
    ```bash
-   git clone [https://github.com/your-username/deepfake-audio-detector.git](https://github.com/your-username/deepfake-audio-detector.git)
-   cd deepfake-audio-detector
+   git clone [https://github.com/yourusername/your-repo-name.git](https://github.com/yourusername/your-repo-name.git)
 
-2. **Install the required dependencies:**
+2. Install the required dependencies:
    ```bash
    pip install -r requirements.txt
 
-3. **Run the Streamlit server:**
+3. Set up your environment variables locally in a .streamlit/secrets.toml file:
    ```bash
-   python -m streamlit run app.py
+   ADMIN_PASSWORD = "your_secure_password"
+   GEMINI_API_KEY = "your_google_api_key"
+   SUPABASE_URL = "your_supabase_url"
+   SUPABASE_KEY = "your_supabase_key"
 
-4. **Open your browser:**
-   The app will automatically launch at http://localhost:8501
+4. Run the application:
+   ```bash
+   streamlit run app.py
+   
