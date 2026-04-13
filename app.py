@@ -336,6 +336,10 @@ with tab1:
                         
                         # --- 6. AI INVESTIGATOR SUMMARY (GEMINI) ---
                         st.markdown("### 🕵️ AI Investigator Summary")
+                        
+                        # Create a variable to hold the text, whether it comes from Gemini or our fallback
+                        ai_summary_text = "" 
+                        
                         with st.spinner("Writing simple summary..."):
                             try:
                                 prompt = f"""
@@ -351,15 +355,26 @@ with tab1:
                                 Keep it professional.
                                 """
                                 summary_response = gemini_model.generate_content(prompt)
-                                st.info(summary_response.text)
+                                ai_summary_text = summary_response.text
+                                st.info(ai_summary_text)
+                                
                             except Exception as e:
-                                st.warning(f"Could not load AI summary at this time. Error: {e}")
+                                error_msg = str(e)
+                                # If it is a 429 Rate Limit error, show the fallback text!
+                                if "429" in error_msg or "quota" in error_msg.lower():
+                                    st.warning("⚠️ Google API Free-Tier limit reached. Showing standard fallback summary.")
+                                    ai_summary_text = f"Automatic AI investigator summary temporarily unavailable due to API rate limits. Based on the underlying neural network analysis, this audio is classified as {verdict} with a confidence score of {confidence:.2f}%."
+                                    st.info(ai_summary_text)
+                                else:
+                                    # For any other random error
+                                    st.warning(f"Could not load AI summary at this time. Error: {e}")
+                                    ai_summary_text = f"AI summary generation failed. System Verdict remains: {verdict}."
                         
                         # --- 7. DATABASE SAVE & REPORT ---
                         save_record(uploaded_file.name, confidence, verdict)
                         
                         try:
-                            # Pass the newly generated data and the Gemini text directly into the PDF generator
+                            # Notice we now use 'ai_summary_text' instead of 'summary_response.text'
                             report_file = create_pdf_report(
                                 filename=uploaded_file.name, 
                                 verdict=verdict, 
@@ -368,7 +383,7 @@ with tab1:
                                 flat_mean=flat_mean, 
                                 zcr_message=zcr_message, 
                                 flat_message=flat_message, 
-                                ai_summary=summary_response.text, 
+                                ai_summary=ai_summary_text, 
                                 wave_path="temp_wave.png", 
                                 spec_path="temp_spec.png", 
                                 cam_path=cam_path
