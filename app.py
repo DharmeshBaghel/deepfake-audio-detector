@@ -157,94 +157,122 @@ with tab1:
                         f.write(uploaded_file.getbuffer())
                     
                     # ==========================================
-                    # 🕵️ ADVANCED FORENSICS SUITE
+                    # 🧠 1. CORE MATH & AI PREDICTION (Invisible Backend)
                     # ==========================================
-                    st.markdown("### 🕵️ Digital Forensics Report")
-                    
-                    # 1. Hidden Metadata Extraction
-                    try:
-                        tag = TinyTag.get(temp_file)
-                        st.write("**File Metadata (Digital Fingerprint):**")
-                        
-                        meta_c1, meta_c2, meta_c3, meta_c4 = st.columns(4)
-                        meta_c1.metric("Sample Rate", f"{tag.samplerate} Hz")
-                        meta_c2.metric("Bitrate", f"{tag.bitrate} kbps" if tag.bitrate else "Unknown")
-                        meta_c3.metric("Duration", f"{tag.duration:.2f} sec")
-                        meta_c4.metric("File Size", f"{tag.filesize / 1024:.1f} KB")
-                        
-                        if tag.extra:
-                            st.caption(f"Hidden Tags Detected: {tag.extra}")
-                    except Exception as e:
-                        st.warning("Could not extract hidden metadata from this file.")
-
-                    # 2. Acoustic Anomaly Breakdown (Sub-metrics)
-                    st.write("**Acoustic Feature Analysis:**")
+                    # Load audio
                     y, sr = librosa.load(temp_file, sr=16000)
                     
+                    # Calculate math
                     zcr = librosa.feature.zero_crossing_rate(y)
                     zcr_mean = np.mean(zcr)
                     
                     flatness = librosa.feature.spectral_flatness(y=y)
                     flat_mean = np.mean(flatness)
                     
-                    feat_c1, feat_c2 = st.columns(2)
-                    
-                    with feat_c1:
-                        st.write("⏱️ **Vocal Roughness (Zero-Crossing)**")
-                        st.progress(min(int(zcr_mean * 1000), 100))
-                        if zcr_mean < 0.05:
-                            st.caption("🚨 Suspiciously smooth. Human vocal cords usually produce more friction/noise.")
-                        else:
-                            st.caption("✅ Natural friction detected.")
-                            
-                    with feat_c2:
-                        st.write("🌬️ **Breathiness (Spectral Flatness)**")
-                        st.progress(min(int(flat_mean * 10000), 100))
-                        if flat_mean < 0.001:
-                            st.caption("🚨 Suspiciously pure tone. Lacks natural human breath resonance.")
-                        else:
-                            st.caption("✅ Natural ambient resonance detected.")
-                            
-                    st.markdown("---")
-
-                    # ==========================================
-                    # 📊 VISUAL SPECTROGRAMS
-                    # ==========================================
-                    st.markdown("### 📊 Audio Forensics Analysis")
-                    c1, c2 = st.columns(2)
-                    
-                    with c1:
-                        st.write("**Waveform**")
-                        fig_wave, ax_wave = plt.subplots(figsize=(8, 3))
-                        librosa.display.waveshow(y, sr=sr, ax=ax_wave, color="#1f77b4")
-                        st.pyplot(fig_wave)
-                        fig_wave.savefig("temp_wave.png", bbox_inches='tight')
-                    
-                    with c2:
-                        st.write("**Mel Spectrogram**")
-                        fig_spec, ax_spec = plt.subplots(figsize=(8, 3))
-                        S = librosa.feature.melspectrogram(y=y, sr=sr, n_mels=128)
-                        S_dB = librosa.power_to_db(S, ref=np.max)
-                        img = librosa.display.specshow(S_dB, x_axis='time', y_axis='mel', sr=sr, ax=ax_spec)
-                        st.pyplot(fig_spec)
-                        fig_spec.savefig("temp_spec.png", bbox_inches='tight')
-
+                    # Run LSTM AI Prediction EARLY
                     features = extract_features(temp_file)
                     if features is not None:
                         features = np.expand_dims(features, axis=0) 
                         prediction = model.predict(features)[0][0]
                         
-                        st.markdown("---")
+                        # Define the verdict before drawing the UI
+                        if prediction > 0.5:
+                            verdict = "FAKE"
+                            confidence = prediction * 100
+                        else:
+                            verdict = "REAL"
+                            confidence = (1 - prediction) * 100
                         
                         # ==========================================
-                        # 🔦 EXPLAINABLE AI SECTION
+                        # 🖥️ 2. UI DASHBOARD RENDERING
                         # ==========================================
+                        st.markdown("### 🕵️ Digital Forensics Report")
+                        
+                        # --- 1. NEURAL NETWORK VERDICT ---
+                        if verdict == "FAKE":
+                            st.error(f"🚨 **FAKE AUDIO DETECTED** (Confidence: {confidence:.2f}%)")
+                        else:
+                            st.success(f"✅ **REAL HUMAN VOICE** (Confidence: {confidence:.2f}%)")
+                        st.markdown("---")
+                        
+                        # --- 2. HIDDEN METADATA ---
+                        try:
+                            tag = TinyTag.get(temp_file)
+                            st.write("**File Metadata (Digital Fingerprint):**")
+                            
+                            meta_c1, meta_c2, meta_c3, meta_c4 = st.columns(4)
+                            meta_c1.metric("Sample Rate", f"{tag.samplerate} Hz")
+                            meta_c2.metric("Bitrate", f"{tag.bitrate} kbps" if tag.bitrate else "Unknown")
+                            meta_c3.metric("Duration", f"{tag.duration:.2f} sec")
+                            meta_c4.metric("File Size", f"{tag.filesize / 1024:.1f} KB")
+                            
+                            if tag.extra:
+                                st.caption(f"Hidden Tags Detected: {tag.extra}")
+                        except Exception as e:
+                            st.warning("Could not extract hidden metadata from this file.")
+
+                        st.markdown("---")
+
+                        # --- 3. DYNAMIC ACOUSTIC FEATURES (Red/Green Logic) ---
+                        st.write("**Acoustic Feature Analysis:**")
+                        
+                        if verdict == "FAKE":
+                            zcr_message = "⚠️ Unnatural robotic glitches detected"
+                            flat_message = "⚠️ Artificial acoustic resonance"
+                            text_color = "inverse"  # Turns text red
+                        else:
+                            zcr_message = "✅ Natural friction detected"
+                            flat_message = "✅ Natural ambient resonance"
+                            text_color = "normal"   # Keeps text green
+                            
+                        feat_c1, feat_c2 = st.columns(2)
+                        
+                        with feat_c1:
+                            st.metric(
+                                label="Vocal Roughness (Zero-Crossing)", 
+                                value=f"{zcr_mean:.4f}", 
+                                delta=zcr_message,
+                                delta_color=text_color
+                            )
+                            
+                        with feat_c2:
+                            st.metric(
+                                label="Breathiness (Spectral Flatness)", 
+                                value=f"{flat_mean:.6f}", 
+                                delta=flat_message,
+                                delta_color=text_color
+                            )
+                            
+                        st.markdown("---")
+
+                        # --- 4. VISUAL SPECTROGRAMS ---
+                        st.markdown("### 📊 Audio Forensics Analysis")
+                        c1, c2 = st.columns(2)
+                        
+                        with c1:
+                            st.write("**Waveform**")
+                            fig_wave, ax_wave = plt.subplots(figsize=(8, 3))
+                            librosa.display.waveshow(y, sr=sr, ax=ax_wave, color="#1f77b4")
+                            st.pyplot(fig_wave)
+                            fig_wave.savefig("temp_wave.png", bbox_inches='tight')
+                        
+                        with c2:
+                            st.write("**Mel Spectrogram**")
+                            fig_spec, ax_spec = plt.subplots(figsize=(8, 3))
+                            S = librosa.feature.melspectrogram(y=y, sr=sr, n_mels=128)
+                            S_dB = librosa.power_to_db(S, ref=np.max)
+                            img = librosa.display.specshow(S_dB, x_axis='time', y_axis='mel', sr=sr, ax=ax_spec)
+                            st.pyplot(fig_spec)
+                            fig_spec.savefig("temp_spec.png", bbox_inches='tight')
+
+                        st.markdown("---")
+                        
+                        # --- 5. EXPLAINABLE AI SECTION ---
                         st.markdown("### 🔦 Explainable AI (X-Ray Vision)")
                         cam_path = None
                         
                         try:
                             heatmap = make_saliency_heatmap(features, model)
-                            
                             time_axis = np.linspace(0, librosa.get_duration(y=y, sr=sr), len(heatmap))
                             fig_cam, ax_cam = plt.subplots(figsize=(10, 2.5))
                             ax_cam.plot(time_axis, heatmap, color='r', linewidth=2)
@@ -257,31 +285,15 @@ with tab1:
                             st.pyplot(fig_cam)
                             fig_cam.savefig("temp_cam.png", bbox_inches='tight')
                             cam_path = "temp_cam.png"
-                            
                         except Exception as e:
                             st.warning(f"Could not generate XAI Heatmap: {e}")
                         
                         st.markdown("---")
-                        st.markdown("### 🤖 Neural Network Verdict")
                         
-                        if prediction > 0.5:
-                            verdict = "FAKE"
-                            confidence = prediction * 100
-                            st.error(f"🚨 **FAKE AUDIO DETECTED** (Confidence: {confidence:.2f}%)")
-                        else:
-                            verdict = "REAL"
-                            confidence = (1 - prediction) * 100
-                            st.success(f"✅ **REAL HUMAN VOICE** (Confidence: {confidence:.2f}%)")
-
-                        # ==========================================
-                        # 📝 AI INVESTIGATOR SUMMARY (GEMINI)
-                        # ==========================================
-                        st.markdown("---")
+                        # --- 6. AI INVESTIGATOR SUMMARY (GEMINI) ---
                         st.markdown("### 🕵️ AI Investigator Summary")
-                        
                         with st.spinner("Writing simple summary..."):
                             try:
-                                # Give instructions to Gemini
                                 prompt = f"""
                                 You are a digital forensics expert. 
                                 I just scanned an audio file. Here are the results:
@@ -294,37 +306,36 @@ with tab1:
                                 Explain what these numbers mean and why the audio is {verdict}. 
                                 Keep it professional.
                                 """
-                                
-                                # Get the answer
                                 summary_response = gemini_model.generate_content(prompt)
-                                
-                                # Show the answer in a nice blue box
                                 st.info(summary_response.text)
-                                
                             except Exception as e:
                                 st.warning(f"Could not load AI summary at this time. Error: {e}")
                         
+                        # --- 7. DATABASE SAVE & REPORT ---
                         save_record(uploaded_file.name, confidence, verdict)
                         
-                        report_file = create_pdf_report(uploaded_file.name, verdict, confidence, "temp_wave.png", "temp_spec.png", cam_path)
-                        
-                        with open(report_file, "rb") as pdf_file:
-                            pdf_bytes = pdf_file.read()
+                        try:
+                            report_file = create_pdf_report(uploaded_file.name, verdict, confidence, "temp_wave.png", "temp_spec.png", cam_path)
+                            with open(report_file, "rb") as pdf_file:
+                                pdf_bytes = pdf_file.read()
+                                
+                            st.download_button(
+                                label="📄 Download Official Forensic Report (PDF)",
+                                data=pdf_bytes,
+                                file_name=f"Report_{uploaded_file.name}.pdf",
+                                mime="application/pdf"
+                            )
+                        except Exception as e:
+                            st.error(f"Could not generate PDF: {e}")
                             
-                        st.download_button(
-                            label="📄 Download Official Forensic Report (PDF)",
-                            data=pdf_bytes,
-                            file_name=f"Report_{uploaded_file.name}.pdf",
-                            mime="application/pdf"
-                        )
-                        
                     else:
                         st.error("Could not process the audio file features.")
                         
+                    # --- 8. SYSTEM CLEANUP ---
                     for file in [temp_file, "temp_wave.png", "temp_spec.png", "temp_cam.png", "forensic_report.pdf"]:
                         if os.path.exists(file):
                             os.remove(file)
-
+                            
 with tab2:
     st.header("⚙️ Admin & History Center")
     
