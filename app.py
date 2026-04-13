@@ -448,6 +448,49 @@ with tab2:
                 )
             else:
                 st.warning("No scans match your search criteria. Try a different filename!")
+
+            # ==========================================
+            # 🛠️ MLOPS: AI FEEDBACK LOOP
+            # ==========================================
+            st.markdown("---")
+            st.subheader("🛠️ AI Model Correction")
+            st.markdown("Did the AI make a mistake? Flag false positives or false negatives below to save the audio for future model retraining.")
+            
+            # Create an expander to keep the UI clean
+            with st.expander("Flag an Incorrect Scan"):
+                # Get the IDs currently visible on the screen
+                available_ids = filtered_df['id'].tolist()
+                
+                if available_ids:
+                    # Layout the form
+                    form_col1, form_col2 = st.columns(2)
+                    
+                    with form_col1:
+                        # Dropdown to pick the specific scan
+                        selected_id = st.selectbox("Select Scan ID to Correct:", available_ids)
+                        
+                    with form_col2:
+                        # Dropdown to select what the audio ACTUALLY is
+                        true_label = st.selectbox("What is the TRUE label of this audio?", ["Actually REAL", "Actually FAKE"])
+                        
+                    # Submit button
+                    if st.button("Flag for Retraining 🚩", type="primary"):
+                        try:
+                            # 1. Send the correction to Supabase
+                            supabase.table("history").update({"human_correction": true_label}).eq("id", selected_id).execute()
+                            
+                            # 2. Show success message
+                            st.success(f"Successfully flagged Scan ID {selected_id}! The data engineering team can now use this file to retrain the model.")
+                            
+                            # 3. Refresh the app to show the updated database
+                            st.rerun()
+                            
+                        except Exception as e:
+                            st.error(f"Failed to update database. Error: {e}")
+                else:
+                    st.info("No scans available to correct.")
                 
         else:
             st.info("The database is currently empty. Run a scan to see history and analytics!")
+
+
