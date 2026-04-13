@@ -120,6 +120,14 @@ def create_pdf_report(filename, verdict, confidence, wave_path, spec_path, cam_p
 # 🖥️ MAIN APP LOGIC
 # ==========================================
 st.set_page_config(page_title="Deepfake Audio Detector", page_icon="🎙️", layout="wide")
+
+# ==========================================
+# 🧠 APP MEMORY (Session State)
+# ==========================================
+# Initialize the admin login state so it exists globally
+if "admin_logged_in" not in st.session_state:
+    st.session_state.admin_logged_in = False
+    
 st.title("🎙️ Deepfake Voice & Audio Detector")
 
 tab1, tab2 = st.tabs(["🔍 Scan Audio", "⚙️ Admin & History"])
