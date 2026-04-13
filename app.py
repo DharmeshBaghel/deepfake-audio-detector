@@ -70,34 +70,64 @@ genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
 gemini_model = genai.GenerativeModel('gemini-2.5-flash')
 
 # ==========================================
-# 📄 PDF GENERATOR
+# 📄 PDF GENERATOR (UPGRADED)
 # ==========================================
-def create_pdf_report(filename, verdict, confidence, wave_path, spec_path, cam_path=None):
+def create_pdf_report(filename, verdict, confidence, zcr_mean, flat_mean, zcr_message, flat_message, ai_summary, wave_path, spec_path, cam_path=None):
+    from fpdf import FPDF
+    from datetime import datetime
+    import os
+    
     pdf = FPDF()
     pdf.add_page()
     
+    # --- 1. HEADER ---
     pdf.set_font("Helvetica", style="B", size=20)
     pdf.cell(200, 15, txt="Audio Forensics Analysis Report", ln=True, align='C')
-    pdf.ln(10)
+    pdf.ln(5)
     
     pdf.set_font("Helvetica", size=12)
-    pdf.cell(200, 10, txt=f"Target File: {filename}", ln=True)
-    pdf.cell(200, 10, txt=f"Date of Analysis: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}", ln=True)
-    pdf.ln(10)
+    pdf.cell(200, 8, txt=f"Target File: {filename}", ln=True)
+    pdf.cell(200, 8, txt=f"Date of Analysis: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}", ln=True)
+    pdf.ln(5)
     
+    # --- 2. VERDICT & CONFIDENCE ---
     pdf.set_font("Helvetica", style="B", size=16)
     if verdict == "FAKE":
-        pdf.set_text_color(220, 53, 69)
+        pdf.set_text_color(220, 53, 69) # Red
         pdf.cell(200, 10, txt=f"VERDICT: SYNTHETIC AUDIO DETECTED", ln=True)
     else:
-        pdf.set_text_color(40, 167, 69)
+        pdf.set_text_color(40, 167, 69) # Green
         pdf.cell(200, 10, txt=f"VERDICT: AUTHENTIC HUMAN VOICE", ln=True)
         
-    pdf.set_text_color(0, 0, 0)
+    pdf.set_text_color(0, 0, 0) # Reset to Black
     pdf.set_font("Helvetica", size=12)
     pdf.cell(200, 10, txt=f"Neural Network Confidence: {confidence:.2f}%", ln=True)
+    pdf.ln(5)
+    
+    # --- 3. ACOUSTIC FEATURE ANALYSIS ---
+    pdf.set_font("Helvetica", style="B", size=14)
+    pdf.cell(200, 10, txt="Acoustic Feature Analysis:", ln=True)
+    pdf.set_font("Helvetica", size=11)
+    
+    # Strip emojis to prevent FPDF from crashing
+    clean_zcr_msg = zcr_message.replace("⚠️ ", "").replace("✅ ", "")
+    clean_flat_msg = flat_message.replace("⚠️ ", "").replace("✅ ", "")
+    
+    pdf.cell(200, 8, txt=f"- Vocal Roughness (Zero-Crossing): {zcr_mean:.4f} ({clean_zcr_msg})", ln=True)
+    pdf.cell(200, 8, txt=f"- Breathiness (Spectral Flatness): {flat_mean:.6f} ({clean_flat_msg})", ln=True)
+    pdf.ln(5)
+    
+    # --- 4. AI INVESTIGATOR SUMMARY ---
+    pdf.set_font("Helvetica", style="B", size=14)
+    pdf.cell(200, 10, txt="AI Investigator Summary:", ln=True)
+    pdf.set_font("Helvetica", size=11)
+    
+    # Clean Gemini text of weird unicode characters and use multi_cell for text wrapping
+    clean_summary = ai_summary.encode('latin-1', 'replace').decode('latin-1')
+    pdf.multi_cell(0, 6, txt=clean_summary)
     pdf.ln(10)
     
+    # --- 5. VISUAL SPECTROGRAMS ---
     pdf.set_font("Helvetica", style="B", size=14)
     pdf.cell(200, 10, txt="Visual Spectral Evidence:", ln=True)
     
@@ -115,7 +145,7 @@ def create_pdf_report(filename, verdict, confidence, wave_path, spec_path, cam_p
     report_path = "forensic_report.pdf"
     pdf.output(report_path)
     return report_path
-
+    
 # ==========================================
 # 🖥️ MAIN APP LOGIC
 # ==========================================
@@ -329,7 +359,21 @@ with tab1:
                         save_record(uploaded_file.name, confidence, verdict)
                         
                         try:
-                            report_file = create_pdf_report(uploaded_file.name, verdict, confidence, "temp_wave.png", "temp_spec.png", cam_path)
+                            # Pass the newly generated data and the Gemini text directly into the PDF generator
+                            report_file = create_pdf_report(
+                                filename=uploaded_file.name, 
+                                verdict=verdict, 
+                                confidence=confidence, 
+                                zcr_mean=zcr_mean, 
+                                flat_mean=flat_mean, 
+                                zcr_message=zcr_message, 
+                                flat_message=flat_message, 
+                                ai_summary=summary_response.text, 
+                                wave_path="temp_wave.png", 
+                                spec_path="temp_spec.png", 
+                                cam_path=cam_path
+                            )
+                            
                             with open(report_file, "rb") as pdf_file:
                                 pdf_bytes = pdf_file.read()
                                 
