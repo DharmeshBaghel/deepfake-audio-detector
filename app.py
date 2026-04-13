@@ -216,15 +216,25 @@ with tab1:
                         # --- 3. DYNAMIC ACOUSTIC FEATURES (Red/Green Logic) ---
                         st.write("**Acoustic Feature Analysis:**")
                         
+                        # 1. Define dynamic messages AND one-line explanations
                         if verdict == "FAKE":
-                            zcr_message = "⚠️ Unnatural robotic glitches detected"
-                            flat_message = "⚠️ Artificial acoustic resonance"
-                            text_color = "inverse"  # Turns text red
-                        else:
-                            zcr_message = "✅ Natural friction detected"
-                            flat_message = "✅ Natural ambient resonance"
-                            text_color = "normal"   # Keeps text green
+                            zcr_message = "⚠️ Unnatural glitches"
+                            flat_message = "⚠️ Artificial resonance"
+                            text_color = "inverse"
                             
+                            # The new one-line explanations for FAKE audio
+                            zcr_explanation = "AI models struggle to copy human vocal cord friction, creating a suspiciously smooth signal."
+                            flat_explanation = "This audio lacks natural breathing frequencies, sounding too 'pure' to be human."
+                        else:
+                            zcr_message = "✅ Natural friction"
+                            flat_message = "✅ Natural ambient tone"
+                            text_color = "normal"
+                            
+                            # The new one-line explanations for REAL audio
+                            zcr_explanation = "Contains the natural micro-frictions and variations expected from real human vocal cords."
+                            flat_explanation = "Natural ambient resonance and human breath patterns are clearly present."
+                            
+                        # 2. Draw the UI
                         feat_c1, feat_c2 = st.columns(2)
                         
                         with feat_c1:
@@ -234,6 +244,8 @@ with tab1:
                                 delta=zcr_message,
                                 delta_color=text_color
                             )
+                            # Add the one-line explanation right under the number
+                            st.caption(f"*{zcr_explanation}*")
                             
                         with feat_c2:
                             st.metric(
@@ -242,6 +254,8 @@ with tab1:
                                 delta=flat_message,
                                 delta_color=text_color
                             )
+                            # Add the one-line explanation right under the number
+                            st.caption(f"*{flat_explanation}*")
                             
                         st.markdown("---")
 
