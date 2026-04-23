@@ -53,4 +53,7 @@ A full-stack, enterprise-grade forensic application designed to detect synthetic
 4. Run the application:
    ```bash
    streamlit run app.py
+
+## 🛡️ Security & Privacy Note
+This tool is designed for educational and defensive cybersecurity purposes. Uploaded audio files are processed entirely in memory and temporarily on disk. To ensure strict data privacy, all raw audio payloads and intermediate visualizations are automatically purged from the local file system immediately following PDF generation.
    
